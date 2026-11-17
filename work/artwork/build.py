@@ -100,9 +100,11 @@ def project(title,layers,colors):
     resources=E.SubElement(model,'resources')
     object_id=2*len(vols)+1
     objects=[{'id':object_id,'volumes':[],'object_settings':{'extruder':0}}]
+    mesh_nodes=[]
     volume_ids=[]
     for i,(mesh,tool,name) in enumerate(vols,1):
         geom=E.SubElement(E.SubElement(resources,'object',id=str(i)),'mesh')
+        mesh_nodes.append(geom)
         vertices=E.SubElement(geom,'vertices')
         for x,y,z in mesh.vertices:
             E.SubElement(vertices,'vertex',x=f'{x:.7f}',y=f'{y:.7f}',z=f'{z:.7f}')
@@ -129,6 +131,30 @@ def project(title,layers,colors):
         for f in ['_rels/.rels','[Content_Types].xml']:dst.writestr(f,(Path("package")/f).read_bytes())
         dst.writestr('Metadata/thumbnail.png',stream.getvalue())
         dst.writestr('Metadata/PrusaSlicer3_project.json',json.dumps(project_data))
+        dst.writestr('3D/3dmodel.model',E.tostring(model,encoding='utf-8',xml_declaration=True))
+    # An ordinary multipart 3MF imports into the user's active project.
+    # Tool numbers in the part names survive import without a material library.
+    for child in list(resources):
+        resources.remove(child)
+    for i,(mesh,tool,name) in enumerate(vols,1):
+        part=E.SubElement(resources,'object',id=str(i),name=f'T{tool} - {name}')
+        part.append(mesh_nodes[i-1])
+    assembly=E.SubElement(resources,'object',id=str(object_id),name=title)
+    components=E.SubElement(assembly,'components')
+    for i in range(1,len(vols)+1):
+        E.SubElement(components,'component',objectid=str(i))
+    for metadata in model.findall('metadata'):
+        if metadata.get('name')=='Application':
+            model.remove(metadata)
+    folder=out/'models_only'
+    folder.mkdir(exist_ok=True)
+    rels=E.fromstring((Path('package')/'_rels/.rels').read_bytes())
+    for entry in list(rels):
+        if entry.get('Target','').endswith('.json'):
+            rels.remove(entry)
+    with zipfile.ZipFile(folder/(title+'.3mf'),'w',zipfile.ZIP_DEFLATED) as dst:
+        dst.writestr('_rels/.rels',E.tostring(rels,encoding='utf-8',xml_declaration=True))
+        dst.writestr('[Content_Types].xml',(Path('package')/'[Content_Types].xml').read_bytes())
         dst.writestr('3D/3dmodel.model',E.tostring(model,encoding='utf-8',xml_declaration=True))
 import sys
 for p in projects:
