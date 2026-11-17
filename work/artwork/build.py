@@ -6,8 +6,8 @@ import numpy as np, cv2, trimesh as tm, resvg_py
 from PIL import Image,ImageDraw,ImageFont
 from shapely import affinity, union_all
 from shapely.geometry import Polygon, MultiPolygon, LineString, box, Point
-out=Path('../../outputs/talire_INDX')
-source=Path('../../outputs/duta_vsuvka/kryci_talir.stl')
+out=Path('../../outputs/INDX_covers')
+source=Path('../../outputs/threaded_insert/cover_plate.stl')
 profile=Path('profile.ini').read_text()
 def contours(mask):
     cs,h=cv2.findContours(np.uint8(mask),cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
@@ -67,10 +67,10 @@ def extrude(p,z,h):
     mesh=tm.util.concatenate([tm.creation.extrude_polygon(q,h,engine='earcut') for q in pp])
     mesh.apply_translation((0,0,z));return mesh
 projects=[
- ('01_Jednorozec',[(unicorn,2,'Obrys jednorozce',0,.6)],['#EFEAE3','#854481']),
- ('02_Hypnospirala',[(spiral,2,'Hypnospirala',0,.6)],['#F5F2E8','#20242B']),
- ('03_Creeper',[(cells('X'),2,'Oci a usta',0,.6),(cells('d'),2,'Cerna pod jednou zelenou vrstvou',.2,.4),(cells('g'),3,'Sede pixely',0,.6),(cells('t'),4,'Svetle modrozelene pixely',0,.6)],['#59A642','#1D2020','#79847E','#93CFC3']),
- ('04_Necum_a_ser',[(words,2,'nečum / a / ser',0,.6)],['#F5F2E8','#20242B'])]
+ ('01_Unicorn',[(unicorn,2,'Unicorn outline',0,.6)],['#EFEAE3','#854481']),
+ ('02_Hypnotic_Spiral',[(spiral,2,'Hypnotic spiral',0,.6)],['#F5F2E8','#20242B']),
+ ('03_Creeper',[(cells('X'),2,'Eyes and mouth',0,.6),(cells('d'),2,'Black backing beneath one green layer',.2,.4),(cells('g'),3,'Gray pixels',0,.6),(cells('t'),4,'Light teal pixels',0,.6)],['#59A642','#1D2020','#79847E','#93CFC3']),
+ ('04_Toilet_Sign',[(words,2,'Lettering',0,.6)],['#F5F2E8','#20242B'])]
 def preview(title,layers,palette,square):
     S=650; image=Image.new('RGB',(S,S),'#E1DDD5'); draw=ImageDraw.Draw(image)
     bd=(19,19,S-19,S-19)
@@ -90,10 +90,10 @@ def project(title,layers,colors):
     inserts=[extrude(p,z,h) for p,t,n,z,h in layers]
     body=tm.boolean.difference([original,*inserts],engine='manifold')
     assert abs(original.volume-body.volume-sum(m.volume for m in inserts))<.1
-    vols=[(body,1,'Talir a magnetove kapsy')]+[(m,t,n) for m,(_,t,n,_,_) in zip(inserts,layers)]
+    vols=[(body,1,'Cover and magnet pockets')]+[(m,t,n) for m,(_,t,n,_,_) in zip(inserts,layers)]
     assert all(m.is_volume for m,_,_ in vols)
-    model=['<model unit="millimeter" xml:lang="cs-CZ" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:slic3rpe="http://schemas.slic3r.org/3mf/2017/06"><metadata name="slic3rpe:Version3mf">1</metadata><metadata name="Application">PrusaSlicer-2.9.7</metadata><metadata name="Title">'+title+'</metadata>']
-    if 'Jednorozec' in title:model.append('<metadata name="LicenseTerms">Unicorn artwork adapted from Sofie Ascherl / OpenMoji, https://openmoji.org/library/emoji-1F984/ – CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/ . Two-tone face inlay.</metadata>')
+    model=['<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:slic3rpe="http://schemas.slic3r.org/3mf/2017/06"><metadata name="slic3rpe:Version3mf">1</metadata><metadata name="Application">PrusaSlicer-2.9.7</metadata><metadata name="Title">'+title+'</metadata>']
+    if 'Unicorn' in title:model.append('<metadata name="LicenseTerms">Unicorn artwork adapted from Sofie Ascherl / OpenMoji, https://openmoji.org/library/emoji-1F984/ – CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/ . Two-tone face inlay.</metadata>')
     model.append('<resources><object id="1" type="model"><mesh><vertices>')
     config=E.Element('config'); obj=E.SubElement(config,'object',id='1',instances_count='1')
     E.SubElement(obj,'metadata',type='object',key='name',value=title)

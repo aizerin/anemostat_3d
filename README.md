@@ -1,15 +1,35 @@
-# Tisknutelný anemostat DN 125
+# Printable DN 125 air valve
 
-Ventil s dutou šroubovací vsuvkou a magnetickým krytem. Hrdlo má vnější průměr 115 mm a zasouvá se 35 mm od límce. Držáky i kryt používají magnety Ø 6 × 3 mm.
+A ventilation valve with a threaded airflow adjustment insert and a removable magnetic cover. The neck has a 115 mm outer diameter and extends 35 mm into the duct from the back of the flange. The cover and holders take 6 × 3 mm disc magnets.
 
-- [OpenSCAD a tiskové díly](outputs/duta_vsuvka) zahrnují tělo, kryt Ø 203 mm, držáky magnetů, lepicí čepy, regulační vsuvku a klíč. Na ventil připadají čtyři držáky a osm čepů.
-- [Celá vsuvka 0,15 mm](outputs/duta_vsuvka/vsuvka_015.stl) a [těsnější varianta 0,10 mm](outputs/duta_vsuvka/vsuvka_010.stl) pasují do stejného těla. Číslo udává návrhovou vůli na stranu. Pro zkoušku jsou přiložené nízké kroužky.
-- [Čtyři projekty barevných talířů pro PrusaSlicer](outputs/talire_INDX) používají profil CORE One INDX 8T s tryskami 0,4 mm a vrstvou 0,20 mm. Motiv se tiskne na podložce. U dvoubarevných talířů je T1 podklad a T2 motiv. Creeper používá T1 zelenou, T2 černou, T3 šedou a T4 světle modrozelenou.
+## Print and assemble
 
-![Náhled čtyř magnetických krytů](outputs/talire_INDX/nahled.png)
+1. Print the [body](outputs/threaded_insert/body.stl), four [magnet holders](outputs/threaded_insert/magnet_holder.stl) and eight [glue-in pins](outputs/threaded_insert/holder_pin.stl). Each holder uses two pins.
+2. Check the thread fit with the [short samples](outputs/threaded_insert/thread_samples.stl). The [0.15 mm insert](outputs/threaded_insert/insert_015.stl) and the [tighter 0.10 mm insert](outputs/threaded_insert/insert_010.stl) both fit the same body. The number is the nominal clearance per side.
+3. Fit the insert from the room side. Remove the cover and turn the insert with the [adjustment key](outputs/threaded_insert/insert_key.stl) to change the outlet gap.
+4. Choose the [plain 203 mm cover](outputs/threaded_insert/cover_plate.stl) or one of the two- or four-color print projects below. The magnet pockets are 3.4 mm deep. Orient each pair of magnets so that the cover is attracted to the holder.
 
-### Zdroje motivů
+The [OpenSCAD model](outputs/threaded_insert/valve.scad) includes the duct, seal, flange, magnet pocket and thread parameters. Use the part selector to view the assembly or export individual parts.
 
-Podklady a generátor jsou ve [work/motivy](work/motivy). Pro opětovné vytvoření 3MF spusť v této složce `python build.py` s balíčky Pillow, NumPy, opencv-python-headless, trimesh, manifold3d, mapbox-earcut, Shapely, SciPy a resvg-py. Generátor používá lokálně instalované písmo Goudy Mediaeval DemiBold. Hotové projekty již obsahují geometrii písmen.
+## PrusaSlicer cover projects
 
-Dvoubarevný obrys jednorožce byl adaptován z díla Sofie Ascherl pro OpenMoji. Předloha a její úprava jsou pod licencí CC BY-SA 4.0. [OpenMoji Unicorn](https://openmoji.org/library/emoji-1F984/) · [Licence](https://creativecommons.org/licenses/by-sa/4.0/)
+Open the 3MF as a project. Each cover prints face down, with the magnet pockets facing up. The included profile uses a Prusa CORE One INDX 8T, 0.4 mm nozzles, PETG and a 0.20 mm layer height.
+
+| Project | Size | Tool assignments |
+| --- | --- | --- |
+| [Unicorn](outputs/INDX_covers/01_Unicorn.3mf) | Ø 203 mm | T1 background, T2 outline |
+| [Hypnotic spiral](outputs/INDX_covers/02_Hypnotic_Spiral.3mf) | Ø 203 mm | T1 background, T2 spiral |
+| [Creeper](outputs/INDX_covers/03_Creeper.3mf) | 203 × 203 mm | T1 green, T2 black, T3 gray, T4 light teal |
+| [Toilet sign](outputs/INDX_covers/04_Toilet_Sign.3mf) | Ø 203 mm | T1 background, T2 lettering |
+
+The toilet sign carries the original Czech inscription “nečum a ser” (“don't stare, just shit”). Darker pixels on the Creeper cover use one green face layer backed by black. The resulting shade depends on filament opacity.
+
+![Front view of the four magnetic covers](outputs/INDX_covers/preview.png)
+
+## Artwork sources
+
+The [artwork directory](work/artwork) contains the generator and its inputs. To regenerate the projects, run `python build.py` from that directory with Pillow, NumPy, opencv-python-headless, trimesh, manifold3d, mapbox-earcut, Shapely, SciPy and resvg-py installed. The generator reads Goudy Mediaeval DemiBold from the user's macOS Fonts directory. The ready-to-print projects include the letter outlines.
+
+## License
+
+Original project material is licensed under [CC BY-NC-SA 4.0](LICENSE.md). The unicorn outline adapts Sofie Ascherl's OpenMoji illustration and retains its CC BY-SA 4.0 license. [Original illustration](https://openmoji.org/library/emoji-1F984/) · [Artwork license](https://creativecommons.org/licenses/by-sa/4.0/)
