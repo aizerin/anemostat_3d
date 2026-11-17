@@ -1,0 +1,13 @@
+.DS_Store
+/outputs/*
+!/outputs/duta_vsuvka/
+!/outputs/talire_INDX/
+/work/*
+!/work/motivy/
+/work/motivy/*
+!/work/motivy/build.py
+!/work/motivy/profile.ini
+!/work/motivy/square.scad
+!/work/motivy/square.stl
+!/work/motivy/unicorn.svg
+!/work/motivy/package/
