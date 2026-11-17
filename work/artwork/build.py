@@ -1,5 +1,5 @@
 from pathlib import Path
-import io, math, zipfile, re
+import io, math, zipfile, json
 import xml.etree.ElementTree as E
 from xml.sax.saxutils import escape
 import numpy as np, cv2, trimesh as tm, resvg_py
@@ -8,7 +8,7 @@ from shapely import affinity, union_all
 from shapely.geometry import Polygon, MultiPolygon, LineString, box, Point
 out=Path('../../outputs/INDX_covers')
 source=Path('../../outputs/threaded_insert/cover_plate.stl')
-profile=Path('profile.ini').read_text()
+profile=Path('package/profile.json').read_text()
 def contours(mask):
     cs,h=cv2.findContours(np.uint8(mask),cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
     paths=[cv2.approxPolyDP(c,.9,True)[:,0,:] for c in cs]
@@ -92,33 +92,44 @@ def project(title,layers,colors):
     assert abs(original.volume-body.volume-sum(m.volume for m in inserts))<.1
     vols=[(body,1,'Cover and magnet pockets')]+[(m,t,n) for m,(_,t,n,_,_) in zip(inserts,layers)]
     assert all(m.is_volume for m,_,_ in vols)
-    model=['<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:slic3rpe="http://schemas.slic3r.org/3mf/2017/06"><metadata name="slic3rpe:Version3mf">1</metadata><metadata name="Application">PrusaSlicer-2.9.7</metadata><metadata name="Title">'+title+'</metadata>']
-    if 'Unicorn' in title:model.append('<metadata name="LicenseTerms">Unicorn artwork adapted from Sofie Ascherl / OpenMoji, https://openmoji.org/library/emoji-1F984/ – CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/ . Two-tone face inlay.</metadata>')
-    model.append('<resources><object id="1" type="model"><mesh><vertices>')
-    config=E.Element('config'); obj=E.SubElement(config,'object',id='1',instances_count='1')
-    E.SubElement(obj,'metadata',type='object',key='name',value=title)
-    tris=[]; offset=0; first=0
-    for m,t,n in vols:
-        model.extend('<vertex x="%.7f" y="%.7f" z="%.7f"/>'%tuple(v) for v in m.vertices)
-        tris.extend('<triangle v1="%d" v2="%d" v3="%d"/>'%tuple(f) for f in m.faces+offset)
-        offset+=len(m.vertices)
-        v=E.SubElement(obj,'volume',firstid=str(first),lastid=str(first+len(m.faces)-1))
-        first+=len(m.faces)
-        for k,val in [('name',n),('volume_type','ModelPart'),('extruder',str(t))]:
-            E.SubElement(v,'metadata',type='volume',key=k,value=val)
-    model+=['</vertices><triangles>',*tris,'</triangles></mesh></object></resources><build><item objectid="1" transform="1 0 0 0 1 0 0 0 1 124 102.5 0"/></build></model>']
-    cfg=profile
-    for k in ['filament_colour','extruder_colour']:
-        cfg=re.sub('^'+k+' = .*$',k+' = '+';'.join((colors+['#888888']*8)[:8]),cfg,flags=re.M)
-    cfg='\n'.join('; '+line for line in cfg.splitlines() if ' = ' in line)+'\n'
+    model=E.Element('model', {'unit':'millimeter','xml:lang':'en-US','xmlns':'http://schemas.microsoft.com/3dmanufacturing/core/2015/02'})
+    for key,value in [('Application','PrusaSlicer-3.0.0-alpha14'),('Title',title)]:
+        E.SubElement(model,'metadata',name=key).text=value
+    if 'Unicorn' in title:
+        E.SubElement(model,'metadata',name='LicenseTerms').text='Unicorn adapted from Sofie Ascherl / OpenMoji, https://openmoji.org/library/emoji-1F984/ . CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/ . Two-tone face inlay.'
+    resources=E.SubElement(model,'resources')
+    object_id=2*len(vols)+1
+    objects=[{'id':object_id,'volumes':[],'object_settings':{'extruder':0}}]
+    volume_ids=[]
+    for i,(mesh,tool,name) in enumerate(vols,1):
+        geom=E.SubElement(E.SubElement(resources,'object',id=str(i)),'mesh')
+        vertices=E.SubElement(geom,'vertices')
+        for x,y,z in mesh.vertices:
+            E.SubElement(vertices,'vertex',x=f'{x:.7f}',y=f'{y:.7f}',z=f'{z:.7f}')
+        triangles=E.SubElement(geom,'triangles')
+        for a,b,c in mesh.faces:
+            E.SubElement(triangles,'triangle',v1=str(a),v2=str(b),v3=str(c))
+        volume_id=i+len(vols)
+        volume_ids.append(volume_id)
+        part=E.SubElement(resources,'object',id=str(volume_id),name=name)
+        E.SubElement(E.SubElement(part,'components'),'component',objectid=str(i))
+        objects[0]['volumes'].append({'id':volume_id,'type':'ModelPart','source':{'objectIdx':-1,'volumeIdx':-1},'volume_settings':{'extruder':tool}})
+    parts=E.SubElement(E.SubElement(resources,'object',id=str(object_id),name=title),'components')
+    for volume_id in volume_ids:
+        E.SubElement(parts,'component',objectid=str(volume_id))
+    E.SubElement(E.SubElement(model,'build'),'item',objectid=str(object_id),transform='1 0 0 0 1 0 0 0 1 124 102.5 0')
+    container=json.loads(profile)
+    palette=(colors+['#888888']*8)[:8]
+    container['configuration']['filament_settings']['filament_colour']=palette
+    container['configuration']['project_settings']['extruder_colour']=palette
+    project_data={'objects':objects,'project':{'id':'','version':1},'config_containers':[container]}
     img=preview(title,layers,colors,sq)
     stream=io.BytesIO();img.resize((256,256)).save(stream,format='PNG')
     with zipfile.ZipFile(out/(title+'.3mf'),'w',zipfile.ZIP_DEFLATED) as dst:
         for f in ['_rels/.rels','[Content_Types].xml']:dst.writestr(f,(Path("package")/f).read_bytes())
         dst.writestr('Metadata/thumbnail.png',stream.getvalue())
-        dst.writestr('Metadata/Slic3r_PE.config',cfg)
-        dst.writestr('Metadata/Slic3r_PE_model.config',E.tostring(config,encoding='utf-8',xml_declaration=True))
-        dst.writestr('3D/3dmodel.model','\n'.join(model))
+        dst.writestr('Metadata/PrusaSlicer3_project.json',json.dumps(project_data))
+        dst.writestr('3D/3dmodel.model',E.tostring(model,encoding='utf-8',xml_declaration=True))
 import sys
 for p in projects:
     if len(sys.argv)==1 or p[0]==sys.argv[1]: project(*p)

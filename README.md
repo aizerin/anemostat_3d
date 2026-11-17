@@ -13,7 +13,7 @@ The [OpenSCAD model](outputs/threaded_insert/valve.scad) includes the duct, seal
 
 ## PrusaSlicer cover projects
 
-Open the 3MF as a project. Each cover prints face down, with the magnet pockets facing up. The included profile uses a Prusa CORE One INDX 8T, 0.4 mm nozzles, PETG and a 0.20 mm layer height.
+Open the 3MF as a project. Each cover prints face down, with the magnet pockets facing up. The included profile uses a Prusa CORE One INDX 8T, 0.4 mm nozzles, the default Prusament PLA preset for PrusaSlicer 3.0.0-alpha14 and a 0.20 mm layer height.
 
 | Project | Size | Tool assignments |
 | --- | --- | --- |

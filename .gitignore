@@ -6,7 +6,6 @@
 !/work/artwork/
 /work/artwork/*
 !/work/artwork/build.py
-!/work/artwork/profile.ini
 !/work/artwork/square.scad
 !/work/artwork/square.stl
 !/work/artwork/unicorn.svg
